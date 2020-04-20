@@ -1,7 +1,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name {{ jitsi_meet_domain }};
+    server_name {{ jitsi_meet_domain }} {{ jitsi_meet_domain_aliases | join(' ') }};
 
     location ^~ /.well-known/acme-challenge/ {
        default_type "text/plain";
@@ -18,7 +18,7 @@ server {
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name {{ jitsi_meet_domain }};
+    server_name {{ jitsi_meet_domain }} {{ jitsi_meet_domain_aliases | join(' ') }};
 
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     ssl_prefer_server_ciphers on;

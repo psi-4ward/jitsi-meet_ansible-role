@@ -1,0 +1,6 @@
+jitsi_meet_domain_aliases: []
+jitsi_meet_domain: meet.example.com
+
+jitsi_jicofo_secret: superSecr3t1
+jitsi_focus_secret: superSecr3t2
+jitsi_jvb_secret: superSecr3t2

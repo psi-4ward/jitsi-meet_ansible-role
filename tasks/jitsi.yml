@@ -144,12 +144,16 @@
     path: /etc/nginx/sites-enabled/default
     state: absent
   notify: reload nginx
+  tags:
+    - nginx
 
 - name: Reconfigure nginx
   template:
     src: "nginx/jitsi-meet.conf.j2"
     dest: "/etc/nginx/sites-available/{{ jitsi_meet_domain }}.conf"
   notify: reload nginx
+  tags:
+    - nginx
 
 - name: Install acme.sh
   shell: curl https://get.acme.sh | sh
