@@ -1,0 +1,73 @@
+-- Plugins path gets uncommented during jitsi-meet-tokens package install - that's where token plugin is located
+--plugin_paths = { "/usr/share/jitsi-meet/prosody-plugins/" }
+
+component_ports = { 5347 }
+component_interface = "0.0.0.0"
+consider_websocket_secure = true;
+cross_domain_websocket = true;
+
+VirtualHost "{{ jitsi_meet_domain }}"
+        -- enabled = false -- Remove this line to enable this host
+        authentication = "anonymous"
+        -- Properties below are modified by jitsi-meet-tokens package config
+        -- and authentication above is switched to "token"
+        --app_id="example_app_id"
+        --app_secret="example_app_secret"
+        -- Assign this host a certificate for TLS, otherwise it would use the one
+        -- set in the global section (if any).
+        -- Note that old-style SSL on port 5223 only supports one certificate, and will always
+        -- use the global one.
+        ssl = {
+                key = "/etc/prosody/certs/{{ jitsi_meet_domain }}.key";
+                certificate = "/etc/prosody/certs/{{ jitsi_meet_domain }}.crt";
+        }
+        -- we need bosh
+        modules_enabled = {
+            "bosh";
+            "pubsub";
+            "ping"; -- Enable mod_ping
+            "websocket";
+            -- "admin_web";
+        }
+
+        c2s_require_encryption = false
+
+admins = {
+  {% for jvb in groups['jvb'] %}
+  "{{ jvb }}",
+  {% endfor %}
+  "focus@auth.{{ jitsi_meet_domain }}"
+}
+
+VirtualHost "auth.{{ jitsi_meet_domain }}"
+    ssl = {
+        key = "/etc/prosody/certs/auth.{{ jitsi_meet_domain }}.key";
+        certificate = "/etc/prosody/certs/auth.{{ jitsi_meet_domain }}.crt";
+    }
+    authentication = "internal_plain"
+
+Component "internal-muc.{{ jitsi_meet_domain }}" "muc"
+    modules_enabled = {
+        "ping";
+    }
+    storage = "memory"
+    muc_room_cache_size = 1000
+
+Component "conference.{{ jitsi_meet_domain }}" "muc"
+    storage = "memory"
+    muc_room_locking = false
+    muc_room_default_public_jids = true
+
+Component "focus.{{ jitsi_meet_domain }}"
+    component_secret = "{{ jitsi_jicofo_secret }}"
+
+{% for jvb in groups['jvb'] %}
+Component "{{ jvb }}"
+    component_secret = "{{ jitsi_jvb_secret }}"
+{% endfor %}
+
+VirtualHost "recorder.{{ jitsi_meet_domain }}"
+    modules_enabled = {
+        "ping";
+    }
+    authentication = "internal_plain"

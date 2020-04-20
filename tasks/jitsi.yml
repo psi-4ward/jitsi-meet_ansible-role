@@ -1,0 +1,166 @@
+- name: Set debconf option
+  debconf:
+    name: jitsi-meet-web-config
+    question: jitsi-meet/cert-choice
+    value: Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)
+    vtype: select
+
+- name: Set debconf option
+  debconf:
+    name: jitsi-meet-web-config
+    question: jitsi-meet/cert-path-crt
+    value: "/etc/ssl/{{ jitsi_meet_domain }}.crt"
+    vtype: string
+
+- name: Set debconf option
+  debconf:
+    name: jitsi-meet-web-config
+    question: jitsi-meet/cert-path-key
+    value: "/etc/ssl/{{ jitsi_meet_domain }}.key"
+    vtype: string
+
+- name: Add Prosody apt key
+  apt_key:
+    url: https://prosody.im/files/prosody-debian-packages.key
+    state: present
+
+- name: Add Prosody apt repo
+  apt_repository:
+    repo: deb http://packages.prosody.im/debian buster main
+    state: present
+
+- name: Install jitsi-meet
+  apt:
+    name:
+      - "jicofo"
+      - "prosody"
+      - "jitsi-meet-web"
+      - "jitsi-meet-web-config"
+    update_cache: true
+    state: present
+
+- name: Create folders
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+  with_items:
+    - "/etc/prosody/conf.d"
+    - "/etc/prosody/certs"
+
+- name: Download additional prosody modules
+  get_url:
+    url: "https://hg.prosody.im/prosody-modules/raw-file/tip/{{ item }}/{{ item }}.lua"
+    dest: /usr/lib/prosody/modules/{{ item }}.lua
+    mode: "0644"
+  with_items:
+    - mod_smacks
+    - mod_reload_components
+    - mod_reload_modules
+#    - mod_admin_web
+
+- name: Reconfigure prosody
+  template:
+    src: "prosody/prosody.cfg.lua.j2"
+    dest: "/etc/prosody/prosody.cfg.lua"
+  notify: reload prosody
+
+- name: Reconfigure prosody vhost
+  template:
+    src: "prosody/vhost.cfg.lua.j2"
+    dest: "/etc/prosody/conf.d/{{ jitsi_meet_domain }}.cfg.lua"
+  notify: reload prosody
+
+- name: Reconfigure Jicofo
+  template:
+    src: "jitsi/jicofo/{{ item }}.j2"
+    dest: "/etc/jitsi/jicofo/{{ item }}"
+  with_items:
+    - "config"
+    - "sip-communicator.properties"
+  notify: reload jicofo
+
+- name: Create jvb user account
+  shell: "prosodyctl register jvb auth.{{ jitsi_meet_domain }} {{ jitsi_jvb_secret }}"
+  args:
+    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e') }}/accounts/jvb.dat"
+
+- name: Create focus user account
+  shell: "prosodyctl register focus auth.{{ jitsi_meet_domain }} {{ jitsi_focus_secret }}"
+  args:
+    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e') }}/accounts/focus.dat"
+
+- name: Create certs
+  shell: >
+    yes '' | prosodyctl cert generate {{ jitsi_meet_domain }}
+  args:
+    creates: /var/lib/prosody/{{ jitsi_meet_domain }}.crt
+
+- name: Create certs symlinks for prosody
+  file:
+    src: "/var/lib/prosody/{{ jitsi_meet_domain }}.{{ item }}"
+    dest: "/etc/prosody/certs/{{ jitsi_meet_domain }}.{{ item }}"
+    state: link
+  with_items:
+    - crt
+    - key
+
+- name: Create auth. certs
+  shell: >
+    yes '' | prosodyctl cert generate auth.{{ jitsi_meet_domain }}
+  args:
+    creates: /var/lib/prosody/auth.{{ jitsi_meet_domain }}.crt
+
+- name: Create certs symlinks for prosody
+  file:
+    src: "/var/lib/prosody/auth.{{ jitsi_meet_domain }}.{{ item }}"
+    dest: "/etc/prosody/certs/auth.{{ jitsi_meet_domain }}.{{ item }}"
+    state: link
+  with_items:
+    - crt
+    - key
+
+- name: Create cert symlinks for ca-certificates
+  file:
+    src: "/var/lib/prosody/{{ jitsi_meet_domain }}.crt"
+    dest: "/usr/local/share/ca-certificates/{{ jitsi_meet_domain }}.crt"
+    state: link
+  register: caCert_updated
+
+- name: update-ca-certificates
+  shell: update-ca-certificates -f
+  when: caCert_updated.changed
+
+- name: Reconfigure Jitsi Meet
+  template:
+    src: "jitsi/meet/{{ item }}.j2"
+    dest: "/etc/jitsi/meet/{{ jitsi_meet_domain }}-{{ item }}"
+  with_items:
+    - config.js
+    - interface_config.js
+
+- name: Remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Reconfigure nginx
+  template:
+    src: "nginx/jitsi-meet.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ jitsi_meet_domain }}.conf"
+  notify: reload nginx
+
+- name: Install acme.sh
+  shell: curl https://get.acme.sh | sh
+  args:
+    creates: /root/.acme.sh/acme.sh
+
+- name: Deploy util scripts
+  template:
+    src: "utils/{{ item }}.j2"
+    dest: "/usr/local/sbin/{{ item }}"
+    mode: "0755"
+  with_items:
+    - "jitsi-moderate.py"
+    - "jitsi-restart.sh"

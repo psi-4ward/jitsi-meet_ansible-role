@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+{% for jvb in groups['jvb'] %}
+echo "Stopping {{ jvb }}"
+ssh -p {{ ansible_port }} root@{{ jvb }} "systemctl stop jitsi-videobridge2"
+{% endfor %}
+
+echo "Stopping jicofo"
+systemctl stop jicofo
+echo "Stopping prosody"
+systemctl stop prosody
+echo "Stopping nginx"
+systemctl stop nginx
+
+echo "Waiting 5 seconds"
+sleep 5
+
+echo "Starting prosody"
+systemctl start prosody
+
+echo "Waiting 5 seconds"
+sleep 5
+
+echo "Starting jicofo"
+systemctl start jicofo
+
+echo "Waiting 5 seconds"
+sleep 5
+
+echo "Starting nginx"
+systemctl start nginx
+
+
+{% for jvb in groups['jvb'] %}
+echo "Starting {{ jvb }}"
+ssh -p {{ ansible_port }} root@{{ jvb }} "systemctl start jitsi-videobridge2"
+{% endfor %}
+
+echo RESTART DONE
+echo

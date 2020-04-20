@@ -1,0 +1,76 @@
+- name: Add jitsi apt key
+  apt_key:
+    url: https://download.jitsi.org/jitsi-key.gpg.key
+    state: present
+  tags:
+    - jitsi
+
+- name: Add jitsi apt repo
+  apt_repository:
+    repo: deb https://download.jitsi.org unstable/
+    state: present
+  tags:
+    - jitsi
+
+# From docu, but should be jitsi-videobrige2 ?
+- name: Set debconf option
+  debconf:
+    name: jitsi-videobridge
+    question: jitsi-videobridge/jvb-hostname
+    value: "{{ jitsi_meet_domain }}"
+    vtype: string
+  tags:
+    - jitsi
+
+- name: Set debconf option
+  debconf:
+    name: jitsi-videobridge2
+    question: jitsi-videobridge/jvb-hostname
+    value: "{{ jitsi_meet_domain }}"
+    vtype: string
+  tags:
+    - jitsi
+
+- name: Set debconf option
+  debconf:
+    name: jitsi-meet
+    question: jitsi-meet/jvb-serve
+    value: "false"
+    vtype: boolean
+  tags:
+    - jitsi
+
+- name: Set debconf option
+  debconf:
+    name: jitsi-meet-prosody
+    question: jitsi-videobridge/jvb-hostname
+    value: "{{ jitsi_meet_domain }}"
+    vtype: string
+  tags:
+    - jitsi
+
+- name: Adjust systemd limits
+  lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: "{{item.rgxp}}"
+    line: "{{item.line}}"
+  with_items:
+    - rgxp: "^DefaultLimitNOFILE="
+      line: "DefaultLimitNOFILE=65000"
+    - rgxp: "^DefaultLimitNPROC="
+      line: "DefaultLimitNPROC=65000"
+    - rgxp: "^DefaultTasksMax="
+      line: "DefaultTasksMax=65000"
+  notify: reload systemd-daemon
+  tags:
+    - jitsi
+
+- include: jitsi.yml
+  when: "'jitsi' in group_names"
+  tags:
+    - jitsi
+
+- include: jvb.yml
+  when: "'jvb' in group_names"
+  tags:
+    - jitsi

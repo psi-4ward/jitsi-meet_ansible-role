@@ -1,0 +1,26 @@
+org.jitsi.videobridge.AUTHORIZED_SOURCE_REGEXP=jvbbrewery@internal-muc.{{ jitsi_meet_domain }}/focus
+
+org.jitsi.videobridge.DISABLE_TCP_HARVESTER=false
+
+org.jitsi.videobridge.xmpp.user.shard.HOSTNAME={{ jitsi_meet_domain }}
+org.jitsi.videobridge.xmpp.user.shard.DOMAIN=auth.{{ jitsi_meet_domain }}
+org.jitsi.videobridge.xmpp.user.shard.USERNAME=jvb
+org.jitsi.videobridge.xmpp.user.shard.PASSWORD={{ jitsi_jvb_secret }}
+org.jitsi.videobridge.xmpp.user.shard.MUC_JIDS=jvbbrewery@internal-muc.{{ jitsi_meet_domain }}
+org.jitsi.videobridge.xmpp.user.shard.MUC_NICKNAME={{ inventory_hostname }}
+org.jitsi.videobridge.xmpp.user.shard.DISABLE_CERTIFICATE_VERIFICATION=true
+
+org.jitsi.videobridge.rest.COLIBRI_WS_DISABLE=false
+org.jitsi.videobridge.rest.COLIBRI_WS_DOMAIN={{ jitsi_meet_domain }}:443
+org.jitsi.videobridge.rest.COLIBRI_WS_SERVER_ID={{ inventory_hostname }}
+org.jitsi.videobridge.rest.jetty.port=9090
+org.jitsi.videobridge.rest.COLIBRI_WS_TLS=true
+
+org.jitsi.videobridge.ENABLE_STATISTICS=true
+org.jitsi.videobridge.STATISTICS_TRANSPORT=muc,colibri,pubsub
+org.jitsi.videobridge.STATISTICS_INTERVAL=2000
+org.jitsi.videobridge.PUBSUB_SERVICE={{ jitsi_meet_domain }}
+org.jitsi.videobridge.PUBSUB_NODE=sharedStatsNode
+
+org.ice4j.ice.harvest.DISABLE_AWS_HARVESTER=true
+org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES=meet-jit-si-turnrelay.jitsi.net:443

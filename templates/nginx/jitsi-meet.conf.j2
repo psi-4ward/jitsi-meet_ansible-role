@@ -1,0 +1,98 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ jitsi_meet_domain }};
+
+    location ^~ /.well-known/acme-challenge/ {
+       default_type "text/plain";
+       root         /usr/share/jitsi-meet;
+    }
+    location = /.well-known/acme-challenge/ {
+       return 404;
+    }
+    location / {
+       return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{ jitsi_meet_domain }};
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+ECDSA+AESGCM:EECDH+aRSA+AESGCM:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA256:EECDH+ECDSA+SHA384:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA384:EDH+aRSA+AESGCM:EDH+aRSA+SHA256:EDH+aRSA:EECDH:!aNULL:!eNULL:!MEDIUM:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS:!RC4:!SEED";
+
+    add_header Strict-Transport-Security "max-age=31536000";
+
+    ssl_certificate /etc/jitsi/meet/{{ jitsi_meet_domain }}.crt;
+    ssl_certificate_key /etc/jitsi/meet/{{ jitsi_meet_domain }}.key;
+
+    root /usr/share/jitsi-meet;
+
+    # ssi on with javascript for multidomain variables in config.js
+    ssi on;
+    ssi_types application/x-javascript application/javascript;
+
+    index index.html index.htm;
+    error_page 404 /static/404.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json;
+    gzip_vary on;
+
+    location = /config.js {
+        alias /etc/jitsi/meet/{{ jitsi_meet_domain }}-config.js;
+    }
+
+   location = /interface_config.js {
+        alias /etc/jitsi/meet/{{ jitsi_meet_domain }}-interface_config.js;
+    }
+
+    location = /external_api.js {
+        alias /usr/share/jitsi-meet/libs/external_api.min.js;
+    }
+
+    #ensure all static content can always be found first
+    location ~ ^/(libs|css|static|images|fonts|lang|sounds|connection_optimization|.well-known)/(.*)$
+    {
+        add_header 'Access-Control-Allow-Origin' '*';
+        alias /usr/share/jitsi-meet/$1/$2;
+    }
+
+    # BOSH
+    location = /http-bind {
+        proxy_pass http://127.0.0.1:5280/http-bind;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Host $http_host;
+    }
+
+    # VideoBridge Control Channel
+    location ~ /colibri-ws/(jvb-[0-9+].{{ jitsi_meet_domain }})/(.*) {
+        resolver 213.133.98.98 213.133.99.99 valid=30s;
+        proxy_pass http://$1:9090/colibri-ws/$1/$2$is_args$args;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        tcp_nodelay on;
+    }
+
+    # xmpp websockets
+    location /xmpp-websocket {
+        proxy_pass http://127.0.0.1:5280/xmpp-websocket;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        tcp_nodelay on;
+    }
+
+    location ~ ^/(?!(http-bind|external_api\.|xmpp-websocket))([a-zA-Z0-9=_äÄöÖüÜß\?\-]+)$ {
+        rewrite ^/(.*)$ / break;
+    }
+
+}
