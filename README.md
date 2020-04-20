@@ -8,7 +8,7 @@ Variables to be defined:
   * `jitsi_focus_secret`
   * `jitsi_jvb_secret`
 
-Depends on `jitsi` and `jvb` host-groups. See [task-includes](./blob/master/tasks/main.yml#L68)
+Depends on `jitsi` and `jvb` host-groups. See [task-includes](./tasks/main.yml#L68)
 
 Restarting jitsi: See [jitsi-restart.sh](./templates/utils/jitsi-restart.sh.j2).
 Seems that order and timeouts are mandatory. 
