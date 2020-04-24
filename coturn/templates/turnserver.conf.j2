@@ -1,0 +1,13 @@
+listening-port=3478
+tls-listening-port=443
+cert=/etc/coturn/certs/{{ inventory_hostname }}.crt
+pkey=/etc/coturn/certs/{{ inventory_hostname }}.key
+
+use-auth-secret
+static-auth-secret={{ coturn_secret }}
+realm=default-realm
+
+keep-address-family
+
+# verbose
+syslog

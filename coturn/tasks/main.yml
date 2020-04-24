@@ -1,0 +1,102 @@
+- name: Install coturn
+  apt:
+    name: "coturn"
+    state: present
+  tags:
+    - coturn
+
+- name: Install nginx (to acquire let's encrypt certs)
+  apt:
+    name: "nginx-light"
+    state: present
+  tags:
+    - coturn
+
+- name: Create certs folders
+  file:
+    path: /etc/coturn/certs
+    state: directory
+    recurse: yes
+  tags:
+    - coturn
+
+- name: Create config symlink
+  file:
+    src: /etc/turnserver.conf
+    dest: /etc/coturn/turnserver.conf
+    state: link
+  tags:
+    - coturn
+
+- name: Create dhparam
+  shell: "openssl dhparam -out /etc/coturn/certs/dhparam4096.pem 4096"
+  args:
+    creates: "/etc/coturn/certs/dhparam4096.pem"
+  tags:
+    - coturn
+
+- name: Install acme.sh
+  shell: "curl https://get.acme.sh | sh"
+  args:
+    creates: /root/.acme.sh/acme.sh
+  tags:
+    - coturn
+
+- name: Acquire acme certificate
+  shell: "acme.sh --issue -w /var/www/html -d {{ inventory_hostname }}"
+  args:
+    creates: "/root/.acme.sh/{{ inventory_hostname }}/{{ inventory_hostname }}.cer"
+  tags:
+    - coturn
+
+- name: Install acme certificate
+  shell: >
+    . /root/.acme.sh/acme.sh.env &&
+    /root/.acme.sh/acme.sh --install-cert -d {{ inventory_hostname }}
+    --key-file /etc/coturn/certs/{{ inventory_hostname }}.key
+    --fullchain-file /etc/coturn/certs/{{ inventory_hostname }}.crt
+    --reloadcmd 'systemctl restart coturn'
+  args:
+    creates: "/etc/coturn/certs/{{ inventory_hostname }}.crt"
+  notify: restart coturn
+  tags:
+    - coturn
+
+- name: Fix cert permissions
+  file:
+    path: /etc/coturn/certs/
+    owner: turnserver
+    recurse: yes
+  tags:
+    - coturn
+
+- name: Create systemd drop-in folder for coturn.service
+  file:
+    path: /etc/systemd/system/coturn.service.d
+    state: directory
+  tags:
+    - coturn
+
+- name: Deploy coturn service dropin
+  template:
+    src: coturn-systemd-dropin.conf.j2
+    dest: /etc/systemd/system/coturn.service.d/coturn-capas.conf
+  notify:
+    - reload systemd-daemon
+    - restart coturn
+  tags:
+    - coturn
+
+- name: Deploy coturn config
+  template:
+    src: "turnserver.conf.j2"
+    dest: "/etc/turnserver.conf"
+  notify: restart coturn
+  tags:
+    - coturn
+
+- include: telegraf.yml
+  tags:
+    - coturn
+    - coturn-telegraf
+

@@ -1,9 +1,9 @@
-- name: Add jitsi apt key
-  apt_key:
-    url: https://download.jitsi.org/jitsi-key.gpg.key
-    state: present
-  tags:
-    - jitsi
+#- name: Add jitsi apt key
+#  apt_key:
+#    url: https://download.jitsi.org/jitsi-key.gpg.key
+#    state: present
+#  tags:
+#    - jitsi
 
 - name: Add jitsi apt repo
   apt_repository:

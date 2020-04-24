@@ -33,11 +33,13 @@ VirtualHost "{{ jitsi_meet_domain }}"
         c2s_require_encryption = false
 
 admins = {
-  {% for jvb in groups['jvb'] %}
+  {% for jvb in groups['jvb'] %}{% if jvb is search("\."+jitsi_meet_domain) %}
   "{{ jvb }}",
-  {% endfor %}
+  {% endif %}{% endfor %}
   "focus@auth.{{ jitsi_meet_domain }}"
 }
+
+
 
 VirtualHost "auth.{{ jitsi_meet_domain }}"
     ssl = {
@@ -61,10 +63,10 @@ Component "conference.{{ jitsi_meet_domain }}" "muc"
 Component "focus.{{ jitsi_meet_domain }}"
     component_secret = "{{ jitsi_jicofo_secret }}"
 
-{% for jvb in groups['jvb'] %}
+{% for jvb in groups['jvb'] %}{% if jvb is search("\."+jitsi_meet_domain) %}
 Component "{{ jvb }}"
     component_secret = "{{ jitsi_jvb_secret }}"
-{% endfor %}
+{% endif %}{% endfor %}
 
 VirtualHost "recorder.{{ jitsi_meet_domain }}"
     modules_enabled = {

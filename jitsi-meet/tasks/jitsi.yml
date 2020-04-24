@@ -59,6 +59,12 @@
     - mod_reload_modules
 #    - mod_admin_web
 
+- name: Download mod_turncredentials from jitsi
+  get_url:
+    url: "https://raw.githubusercontent.com/jitsi/jitsi-meet/master/resources/prosody-plugins/mod_turncredentials.lua"
+    dest: /usr/lib/prosody/modules/mod_turncredentials.lua
+    mode: "0644"
+
 - name: Reconfigure prosody
   template:
     src: "prosody/prosody.cfg.lua.j2"
@@ -83,12 +89,12 @@
 - name: Create jvb user account
   shell: "prosodyctl register jvb auth.{{ jitsi_meet_domain }} {{ jitsi_jvb_secret }}"
   args:
-    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e') }}/accounts/jvb.dat"
+    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e').replace('-', '%2d') }}/accounts/jvb.dat"
 
 - name: Create focus user account
   shell: "prosodyctl register focus auth.{{ jitsi_meet_domain }} {{ jitsi_focus_secret }}"
   args:
-    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e') }}/accounts/focus.dat"
+    creates: "/var/lib/prosody/auth%2e{{ jitsi_meet_domain.replace('.', '%2e').replace('-', '%2d') }}/accounts/focus.dat"
 
 - name: Create certs
   shell: >
@@ -122,10 +128,13 @@
 
 - name: Create cert symlinks for ca-certificates
   file:
-    src: "/var/lib/prosody/{{ jitsi_meet_domain }}.crt"
-    dest: "/usr/local/share/ca-certificates/{{ jitsi_meet_domain }}.crt"
+    src: "/var/lib/prosody/{{ item }}{{ jitsi_meet_domain }}.crt"
+    dest: "/usr/local/share/ca-certificates/{{ item }}{{ jitsi_meet_domain }}.crt"
     state: link
   register: caCert_updated
+  with_items:
+    - ""
+    - "auth."
 
 - name: update-ca-certificates
   shell: update-ca-certificates -f
@@ -168,3 +177,5 @@
   with_items:
     - "jitsi-moderate.py"
     - "jitsi-restart.sh"
+  tags:
+    - jitsi-utils

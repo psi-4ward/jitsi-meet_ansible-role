@@ -1,0 +1,17 @@
+- name: Deploy coturn_sessions.sh
+  template:
+    src: "coturn_sessions.sh.j2"
+    dest: "/usr/local/bin/coturn_sessions"
+    mode: 0755
+
+- name: Deploy telegraf sudoers config
+  template:
+    src: "telegraf-sudoers.j2"
+    dest: "/etc/sudoers.d/90-telegraf-coturn"
+    mode: 0440
+
+- name: Deploy telegraf config
+  template:
+    src: "coturn_sessions_telegraf.conf.js"
+    dest: "/etc/telegraf/telegraf.d/coturn_sessions.conf"
+  notify: restart telegraf

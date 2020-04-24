@@ -1,4 +1,5 @@
--- Prosody Example Configuration File
+-- {{ ansible_managed }}
+-- Prosody Configuration File
 --
 -- Information on configuring Prosody can be found on our
 -- website at https://prosody.im/doc/configure
@@ -94,6 +95,8 @@ modules_enabled = {
 		--"proxy65"; -- Enables a file transfer proxy service which clients behind NAT can use
 
 		"smacks"; --XEP-0198: Stream Management
+		{% if jitsi_meet_turnservers|length > 0 %}"turncredentials";{% endif %}
+
 }
 
 -- These modules are auto-loaded, but should you want
@@ -103,6 +106,18 @@ modules_disabled = {
 	-- "c2s"; -- Handle client connections
 	-- "s2s"; -- Handle server-to-server connections
 }
+
+{% if jitsi_meet_turnservers|length > 0 %}
+turncredentials_secret = "{{ coturn_secret }}";
+turncredentials = {
+{% for turnserver in jitsi_meet_turnservers %}
+  { type = "stun", host = "{{ turnserver }}", port = "3478" },
+  { type = "turn", host = "{{ turnserver }}", port = "3478", transport = "udp" },
+  { type = "turns", host = "{{ turnserver }}", port = "443", transport = "tcp" }
+  {% if not loop.last %},{% endif %}
+{% endfor %}
+};
+{% endif %}
 
 -- Disable account creation by default, for security
 -- For more information see https://prosody.im/doc/creating_accounts
