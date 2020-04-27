@@ -54,16 +54,19 @@
     dest: /usr/lib/prosody/modules/{{ item }}.lua
     mode: "0644"
   with_items:
-    - mod_smacks
     - mod_reload_components
     - mod_reload_modules
 #    - mod_admin_web
 
-- name: Download mod_turncredentials from jitsi
+- name: Download additional prosody modules from jitsi
   get_url:
-    url: "https://raw.githubusercontent.com/jitsi/jitsi-meet/master/resources/prosody-plugins/mod_turncredentials.lua"
-    dest: /usr/lib/prosody/modules/mod_turncredentials.lua
+    url: "https://raw.githubusercontent.com/jitsi/jitsi-meet/master/resources/prosody-plugins/{{ item }}.lua"
+    dest: /usr/lib/prosody/modules/{{ item }}.lua
     mode: "0644"
+  with_items:
+    - mod_turncredentials
+    - mod_smacks
+    - util.lib # jitsi has an enhanced util.lib
 
 - name: Reconfigure prosody
   template:
@@ -179,3 +182,7 @@
     - "jitsi-restart.sh"
   tags:
     - jitsi-utils
+
+- name: Setup JWT Auth
+  include: "jwt-auth.yml"
+  when: jitsi_use_jwt

@@ -461,7 +461,7 @@ var config = {
 
 };
 
-if(document.location.hash.match(/moderator/)) {
+if(typeof document !== "undefined" && document.location && document.location.hash.match(/moderator/)) {
   config.constraints.video.width = {
     max: 1920,
     ideal: 1920,
@@ -475,7 +475,7 @@ if(document.location.hash.match(/moderator/)) {
   config.disableSimulcast = true;
 }
 
-if(document.location.hash.match(/no-websocket/)) {
+if(typeof document !== "undefined" && document.location && document.location.hash.match(/no-websocket/)) {
   config.websocket = null;
   config.openBridgeChannel = 'datachannel';
 }

@@ -43,7 +43,11 @@
     - coturn
 
 - name: Acquire acme certificate
-  shell: "acme.sh --issue -w /var/www/html -d {{ inventory_hostname }}"
+  shell: >
+    . /root/.acme.sh/acme.sh.env &&
+    /root/.acme.sh/acme.sh --issue
+    -w /var/www/html
+    -d {{ inventory_hostname }}
   args:
     creates: "/root/.acme.sh/{{ inventory_hostname }}/{{ inventory_hostname }}.cer"
   tags:

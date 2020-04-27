@@ -22,3 +22,7 @@ org.jitsi.videobridge.rest.COLIBRI_WS_DOMAIN={{ jitsi_meet_domain }}:443
 org.jitsi.videobridge.rest.COLIBRI_WS_SERVER_ID={{ inventory_hostname }}
 org.jitsi.videobridge.rest.jetty.port=9090
 org.jitsi.videobridge.rest.COLIBRI_WS_TLS=true
+
+{% if jitsi_meet_turnservers|length > 0 %}
+org.ice4j.ice.harvest.STUN_MAPPING_HARVESTER_ADDRESSES={% for turnserver in jitsi_meet_turnservers %}{{ turnserver }}{% if not loop.last %},{% endif %}{% endfor %}
+{% endif %}

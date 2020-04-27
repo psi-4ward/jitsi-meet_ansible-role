@@ -1,0 +1,44 @@
+- name: Install prosody jwt auth deps
+  apt:
+    name:
+      - "git"
+      - "cmake"
+      - "luarocks"
+      - "libssl-dev"
+      - "liblua5.2"
+    state: present
+
+- name: Deploy luajwtjitsi.rockspec
+  template:
+    src: "prosody/luajwtjitsi.rockspec.j2"
+    dest: "/tmp/luajwtjitsi.rockspec"
+
+- name: Install lua-basexx
+  shell: "luarocks install basexx"
+  args:
+    creates: "/usr/local/share/lua/5.2/basexx.lua"
+
+- name: Install luajwtjitsi
+  shell: "luarocks install /tmp/luajwtjitsi.rockspec"
+  args:
+    creates: "/usr/local/share/lua/5.2/luajwtjitsi.lua"
+
+- name: Deploy patched mod_websocket.lua
+  template:
+    src: "prosody/mod_websocket.lua.j2"
+    dest: "/usr/lib/prosody/modules/mod_websocket.lua"
+
+- name: Download additional prosody modules from jitsi
+  get_url:
+    url: "https://raw.githubusercontent.com/jitsi/jitsi-meet/master/resources/prosody-plugins/{{ item }}.lua"
+    dest: /usr/lib/prosody/modules/{{ item }}.lua
+    mode: "0644"
+  with_items:
+    - mod_auth_token
+    - mod_token_verification
+    - mod_presence_identity
+
+- name: Download mod_token_moderation
+  get_url: "https://raw.githubusercontent.com/nvonahsen/jitsi-token-moderation-plugin/master/mod_token_moderation.lua"
+    dest: /usr/lib/prosody/modules/mod_token_moderation.lua
+    mode: "0644"
