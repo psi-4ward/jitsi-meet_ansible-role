@@ -36,6 +36,8 @@ var config = {
     enableNoAudioDetection: true,
     enableNoisyMicDetection: false,
     stereo: false,
+    disableRemoteControl: true,
+    trackContentHint: null;
 
     // BOSH URL. FIXME: use XEP-0156 to discover it.
     bosh: '//{{ jitsi_meet_domain }}/http-bind',
@@ -82,7 +84,7 @@ var config = {
     // Audio
 
     // Disable measuring of audio levels.
-    disableAudioLevels: false,
+    disableAudioLevels: true,
 
     // Start the conference in audio only mode (no video is being received nor
     // sent).
@@ -93,7 +95,7 @@ var config = {
 
     // Start calls with audio muted. Unlike the option above, this one is only
     // applied locally. FIXME: having these 2 options is confusing.
-    // startWithAudioMuted: false,
+    startWithAudioMuted: true,
 
     // Enabling it (with #params) will disable local audio output of remote
     // participants and to enable it back a reload is needed.
@@ -113,7 +115,7 @@ var config = {
         video: {
             aspectRatio: 16 / 9,
             height: {
-                ideal: 720,
+                ideal: 480,
                 max: 1080,
                 min: 240
             }
@@ -127,7 +129,7 @@ var config = {
     // Enable / disable layer suspension.  If enabled, endpoints whose HD
     // layers are not in use will be suspended (no longer sent) until they
     // are requested again.
-    enableLayerSuspension: false,
+    enableLayerSuspension: true,
 
     // Every participant after the Nth will start video muted.
     // startVideoMuted: 10,
@@ -209,7 +211,8 @@ var config = {
     // Misc
 
     // Default value for the channel "last N" attribute. -1 for unlimited.
-    channelLastN: -1,
+    // https://github.com/jitsi/jitsi-videobridge/blob/master/doc/last-n.md
+    channelLastN: 16,
 
     // Disables or enables RTX (RFC 4588) (defaults to false).
     disableRtx: false,
@@ -458,7 +461,6 @@ var config = {
      nick
      startBitrate
      */
-
 };
 
 if(typeof document !== "undefined" && document.location && document.location.hash.match(/moderator/)) {
@@ -473,11 +475,53 @@ if(typeof document !== "undefined" && document.location && document.location.has
     min: 720
   };
   config.disableSimulcast = true;
+//  config.trackContentHint = 'detail';
 }
 
 if(typeof document !== "undefined" && document.location && document.location.hash.match(/no-websocket/)) {
   config.websocket = null;
   config.openBridgeChannel = 'datachannel';
 }
+
+
+(function() {
+  if(typeof document === 'undefined' || !document.location) return;
+
+  // Overwrite settings using jwt payload.uiConfig
+  function setConfigByJWT() {
+    var validProps = [
+      'enableLipSync',
+      'startBitrate',
+      'startWithAudioMuted',
+      'resolution',
+      'constraints',
+      'disableSimulcast',
+      'startWithVideoMuted',
+      'desktopSharingChromeDisabled',
+      'desktopSharingFrameRate',
+      'startScreenSharing',
+      'channelLastN',
+    ];
+    if (document.location.search) {
+      var urlParams = new URLSearchParams(document.location.search)
+      var jwt = urlParams.get('jwt');
+      if(!jwt) return;
+      try {
+        var payload = JSON.parse(atob(jwt.split('.')[1]));
+        if (!payload.uiConfig) return;
+        Object.keys(payload.uiConfig).forEach(function(k) {
+          if(validProps.indexOf(k) === -1) return;
+          console.info('Setting config opt by jwt', k, payload.uiConfig[k]);
+          config[k] = payload.uiConfig[k];
+        });
+      }
+      catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  setConfigByJWT();
+})();
 
 /* eslint-enable no-unused-vars, no-var */

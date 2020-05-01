@@ -11,5 +11,10 @@
     dest: "/etc/jitsi/videobridge/{{ item }}"
   notify: restart jitsi-videobridge2
   with_items:
-    - "sip-communicator.properties"
     - "config"
+
+- name: Deploy videobridge.rc
+  template:
+    src: "jitsi/videobridge/videobridge.rc.j2"
+    dest: "/usr/share/jitsi-videobridge/lib/videobridge.rc mit"
+  notify: restart jitsi-videobridge2

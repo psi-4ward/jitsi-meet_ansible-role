@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Manage moderator rights for Occupants
+# Credits: lukas2511
+
 import sys
 if sys.version_info.major == 2:
     raise Exception("run with python3 you idiot")
@@ -30,7 +33,7 @@ def cmd(c):
     return list(x[2:] for x in retraw.decode().strip().strip("\x00").splitlines()[:-3])
 
 def list_rooms():
-    rooms_raw = cmd('> for room in hosts["conference.{{ inventory_hostname }}"]["modules"]["muc"].all_rooms() do print(room["jid"]); end')
+    rooms_raw = cmd('> for room in hosts["conference.{{ jitsi_meet_domain }}"]["modules"]["muc"].all_rooms() do print(room["jid"]); end')
     rooms = []
     for room_raw in rooms_raw:
         if not room_raw.startswith("org.jitsi.jicofo.rest.health-"):
@@ -39,11 +42,11 @@ def list_rooms():
 
 def get_room(room):
     if '@' not in room:
-        room += "@conference.{{ inventory_hostname }}"
+        room += "@conference.{{ jitsi_meet_domain }}"
     if not room in list_rooms():
         raise Exception("Room does not exist")
 
-    room_raw = cmd('> for room_jid, occupant in pairs(hosts["conference.{{ inventory_hostname }}"]["modules"]["muc"].get_room_from_jid("%s")["_occupants"]) do for fulljid, presence in pairs(occupant["sessions"]) do print(room_jid, occupant["role"], fulljid, presence); end; end' % room)
+    room_raw = cmd('> for room_jid, occupant in pairs(hosts["conference.{{ jitsi_meet_domain }}"]["modules"]["muc"].get_room_from_jid("%s")["_occupants"]) do for fulljid, presence in pairs(occupant["sessions"]) do print(room_jid, occupant["role"], fulljid, presence); end; end' % room)
     nicks = []
     for line in room_raw:
         room_jid, role, fulljid, presencexml = line.split(None, 3)
@@ -63,7 +66,7 @@ def get_room(room):
 
 def set_affiliation(room, jid, role):
     if '@' not in room:
-        room += "@conference.{{ inventory_hostname }}"
+        room += "@conference.{{ jitsi_meet_domain }}"
     c = 'muc:room("%s"):set_affiliation(true, "%s", "%s")' % (room, jid, role)
     print(c)
     cmd(c)
@@ -83,10 +86,10 @@ def revoke_owner(room, nick):
             set_affiliation(room, user['fulljid'].split("/")[0], "member")
 
 def usage():
-    print("Usage: %s [list/occupants/grant/revoke/onlyone] [?ROOM] [?NICK]" % sys.argv[0])
+    print("Usage: %s [list/users/grant/revoke/onlyone] [?ROOM] [?NICK]" % sys.argv[0])
     print("")
     print("%s list                         list active rooms" % sys.argv[0])
-    print("%s occupants [room]             list room occupants" % sys.argv[0])
+    print("%s users [room]                 list room users" % sys.argv[0])
     print("%s grant [room] [nick]          grant ownership for nick" % sys.argv[0])
     print("%s revoke [room] [nick]         revoke ownership for nick" % sys.argv[0])
     print("%s onlyone [room] [nick]        grant ownership for nick and revoke for anyone else" % sys.argv[0])
@@ -99,9 +102,9 @@ elif sys.argv[1] == "list":
     print("%d active rooms:" % len(rooms))
     for room in rooms:
         print("- %s" % room.split("@")[0])
-elif sys.argv[1] == "occupants":
+elif sys.argv[1] == "users":
     room = get_room(sys.argv[2])
-    print("%d occupants in %s" % (len(room), sys.argv[2]))
+    print("%d users in %s" % (len(room), sys.argv[2]))
     for occupant in room:
         print("- %s (%s)" % (occupant['nick'] if occupant['nick'] else occupant['fulljid'], occupant['role']))
 elif sys.argv[1] == "onlyone":

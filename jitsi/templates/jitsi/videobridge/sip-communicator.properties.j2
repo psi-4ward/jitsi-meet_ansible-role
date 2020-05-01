@@ -1,6 +1,6 @@
 org.jitsi.videobridge.AUTHORIZED_SOURCE_REGEXP=jvbbrewery@internal-muc.{{ jitsi_meet_domain }}/focus
 
-org.jitsi.videobridge.DISABLE_TCP_HARVESTER=false
+org.jitsi.videobridge.DISABLE_TCP_HARVESTER={%if jitsi_disabled_jvb_tcp_harvesting %}true{% else %}false{% endif %}
 org.ice4j.ice.harvest.DISABLE_AWS_HARVESTER=true
 org.jitsi.jicofo.ALWAYS_TRUST_MODE_ENABLED=true
 

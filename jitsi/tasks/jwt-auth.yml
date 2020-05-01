@@ -5,7 +5,7 @@
       - "cmake"
       - "luarocks"
       - "libssl-dev"
-      - "liblua5.2"
+      - "liblua5.2-0"
     state: present
 
 - name: Deploy luajwtjitsi.rockspec
@@ -23,22 +23,20 @@
   args:
     creates: "/usr/local/share/lua/5.2/luajwtjitsi.lua"
 
-- name: Deploy patched mod_websocket.lua
+- name: Deploy patched mod_websocket.lua and mod_token_verification
   template:
-    src: "prosody/mod_websocket.lua.j2"
-    dest: "/usr/lib/prosody/modules/mod_websocket.lua"
+    src: "prosody/{{ item }}.j2"
+    dest: "/usr/lib/prosody/modules/{{ item }}"
+  with_items:
+    - mod_websocket.lua
+    - mod_token_moderation.lua
 
 - name: Download additional prosody modules from jitsi
   get_url:
     url: "https://raw.githubusercontent.com/jitsi/jitsi-meet/master/resources/prosody-plugins/{{ item }}.lua"
-    dest: /usr/lib/prosody/modules/{{ item }}.lua
+    dest: "/usr/lib/prosody/modules/{{ item }}.lua"
     mode: "0644"
   with_items:
     - mod_auth_token
     - mod_token_verification
     - mod_presence_identity
-
-- name: Download mod_token_moderation
-  get_url: "https://raw.githubusercontent.com/nvonahsen/jitsi-token-moderation-plugin/master/mod_token_moderation.lua"
-    dest: /usr/lib/prosody/modules/mod_token_moderation.lua
-    mode: "0644"

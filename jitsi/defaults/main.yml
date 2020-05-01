@@ -9,3 +9,5 @@ jitsi_jvb_secret: superSecr3t2
 jitsi_use_jwt: false
 jitsi_jwt_secret: m3gas3cre7
 jitsi_allow_empty_token: true
+
+jitsi_disabled_jvb_tcp_harvesting: false

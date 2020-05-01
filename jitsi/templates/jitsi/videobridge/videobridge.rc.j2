@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Get available system memory
+SYSTEM_MEM_MB=$(grep MemTotal /proc/meminfo | awk '{printf "%i", $2 / 1024}')
+
+export VIDEOBRIDGE_MAX_MEMORY=$(awk "BEGIN {printf \"%i\", ${SYSTEM_MEM_MB} * 0.8}")m

@@ -7,14 +7,14 @@ consider_websocket_secure = true;
 cross_domain_websocket = true;
 
 VirtualHost "{{ jitsi_meet_domain }}"
-        {% if jitsi_use_jwt %}
+{% if jitsi_use_jwt %}
         authentication = "token"
         app_id = "{{ jitsi_meet_domain }}"
         app_secret = "{{ jitsi_jwt_secret }}";
-        allow_empty_token = {{ jitsi_allow_empty_token }};
-        {% else %}
+        allow_empty_token = {% if jitsi_allow_empty_token %}true{% else %}false{% endif %};
+{% else %}
         authentication = "anonymous"
-        {% endif %}
+{% endif %}
         ssl = {
                 key = "/etc/prosody/certs/{{ jitsi_meet_domain }}.key";
                 certificate = "/etc/prosody/certs/{{ jitsi_meet_domain }}.crt";
@@ -28,7 +28,6 @@ VirtualHost "{{ jitsi_meet_domain }}"
 {% if jitsi_use_jwt %}
             "presence_identity";
 {% endif %}
-
         }
 
         c2s_require_encryption = false
@@ -39,7 +38,6 @@ admins = {
   {% endif %}{% endfor %}
   "focus@auth.{{ jitsi_meet_domain }}"
 }
-
 
 
 VirtualHost "auth.{{ jitsi_meet_domain }}"

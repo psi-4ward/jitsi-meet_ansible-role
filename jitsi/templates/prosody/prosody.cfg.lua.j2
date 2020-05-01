@@ -111,10 +111,11 @@ modules_disabled = {
 turncredentials_secret = "{{ coturn_secret }}";
 turncredentials = {
 {% for turnserver in jitsi_meet_turnservers %}
-  { type = "stun", host = "{{ turnserver }}", port = "3478" },
-  { type = "turn", host = "{{ turnserver }}", port = "3478", transport = "udp" },
-  { type = "turns", host = "{{ turnserver }}", port = "443", transport = "tcp" }
-  {% if not loop.last %},{% endif %}
+  { type = "stun", host = "{{ turnserver }}", port = "443", transport = "tcp" },
+  { type = "turn", host = "{{ turnserver }}", port = "443", transport = "tcp" },
+  --  Chrome bug 71
+  -- { type = "turns", host = "{{ turnserver }}", port = "443", transport = "tcp" },
+
 {% endfor %}
 };
 {% endif %}
